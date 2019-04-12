@@ -32,6 +32,7 @@ function ask() {
         ])
         .then(answers => {
             if (answers.command === "concert-this") {
+                local.command = answers.command;
                 inquirer.prompt([
                     {
                         type: "input",
@@ -41,11 +42,12 @@ function ask() {
                     }
                 ])
                     .then(answers => {
-                        local.command = answers.command;
                         local.artist = answers.artist;
+                        logInfo(local.command + " " + local.artist);
                         checkBandsApi();
                     });
             } else if (answers.command === "spotify-this-song") {
+                local.command = answers.command;
                 inquirer.prompt([
                     {
                         type: "input",
@@ -55,11 +57,12 @@ function ask() {
                     }
                 ])
                     .then(answers => {
-                        local.command = answers.command;
                         local.songName = answers.songName;
+                        logInfo(local.command + " " + local.songName);
                         checkSpotify();
                     });
             } else if (answers.command === "movie-this") {
+                local.command = answers.command;
                 inquirer.prompt([
                     {
                         type: "input",
@@ -69,11 +72,13 @@ function ask() {
                     }
                 ])
                     .then(answers => {
-                        local.command = answers.command;
                         local.movie = answers.movie;
+                        logInfo(local.command + " " + local.movie);
                         checkOmbd();
                     });
             } else if (answers.command === "do-what-it-says") {
+                local.command = answers.command;
+                logInfo(local.command);
                 readRandomFile();
             }
         })
@@ -98,6 +103,7 @@ function checkBandsApi() {
                 }
                 confirm();
             });
+            local.artist = "";
 }
 
 function checkSpotify() {
@@ -113,10 +119,12 @@ function checkSpotify() {
                 console.log(`Preview Link: ${response.tracks.items[j].album.artists[0].external_urls.spotify}`);
                 console.log("__________________________________________________________");
             }
+            confirm();
         })
         .catch(function (err) {
             console.log(err);
         });
+        local.songName = "";
 }
 
 function checkOmbd() {
@@ -133,14 +141,32 @@ function checkOmbd() {
                 \nLanguage: ${response.data.Language}
                 \nPlot: ${response.data.Plot}
                 \nActors: ${response.data.Actors}`);
-            }
-        );
+
+                confirm();
+            });
     local.movie = "";
 }
 
 function readRandomFile() {
     console.log(`Reading file in a moment...`);
-    //   fs.readFile("random.txt", "utf-8", )
+    fs.readFile("random.txt", "utf8", function (error, data) {
+        if (error) {
+            console.log(`Error occurred: ${error}`);
+        }
+        var newData = data.split(","); //an array
+        local.command = newData[0];
+
+        if (local.command === "concert-this") {
+            local.artist = newData[1];
+            checkBandsApi();
+        } else if (local.command === "spotify-this-song") {
+            local.songName = newData[1];
+            checkSpotify();
+        } else if (local.command === "movie-this") {
+            local.movie = newData[1];
+            checkOmbd();
+        }
+    });
 }
 
 function confirm() {
@@ -154,7 +180,6 @@ function confirm() {
             }
         ])
         .then(answers => {
-            console.log(answers.confirm);
             if (answers.confirm) {
                 ask();
             }
@@ -165,5 +190,15 @@ function confirm() {
         .catch(errors => {
             console.log(`Error occurred: ${errors}`);
         });
+}
+
+function logInfo (info) {
+    fs.appendFile("log.txt", info + "\n", function(err) {
+        if (err) {
+          return console.log(err);
+        }
+
+        console.log("log.txt was updated!");      
+      });
 }
 
