@@ -1,9 +1,8 @@
-var dotenv = require("dotenv").config();
+require("dotenv").config();
 
 var keys = require("./keys.js");
 var fs = require("fs");
 var inquirer = require("inquirer");
-var request = require("request");
 var Spotify = require("node-spotify-api");
 var axios = require("axios");
 var spotify = new Spotify(keys.spotify);
@@ -91,64 +90,79 @@ ask();
 // Define each function
 //___________________________________________________________________
 function checkBandsApi() {
-    console.log(`The artist you picked was ${local.artist}`);
+    // console.log(`\nThe artist you picked was ${local.artist}`);
     axios.get("https://rest.bandsintown.com/artists/" + local.artist.toLowerCase().replace(" ", "+") + "/events?app_id=codingbootcamp")
         .then(
             function (response) {
-                for (let i = 0; i < response.data.length; i++) {
-                    console.log(`\nVenue Name: ${response.data[0].venue.name}
-                        \nVenue Location: ${response.data[0].venue.city}, ${response.data[0].venue.region}
-                        \nDate: ${moment(response.data[0].datetime).format("MM/DD/YYYY")}`);
-                    console.log("_____________________________________");
+                if (response.data.length === 0) {
+                    console.log(`${local.artist} has no concerts found in the near future.`);
+                } else {
+                    for (let i = 0; i < response.data.length; i++) {
+                        console.log(`Venue Name: ${response.data[i].venue.name}`);
+                        console.log(`Venue Location: ${response.data[i].venue.city}, ${response.data[i].venue.region}`);
+                        console.log(`Date: ${moment(response.data[i].datetime).format("MM/DD/YYYY")}`);
+                        console.log("_____________________________________");
+                    }
                 }
                 confirm();
-            });
-            local.artist = "";
+                local.artist = "";
+            })
+        .catch(function (error) {
+            console.log(error.message);
+        });
 }
 
 function checkSpotify() {
-    console.log(`The song you picked was ${local.songName}`);
+    // console.log(`\nThe song you picked was ${local.songName}`);
     spotify
         .search({ type: 'track', query: local.songName.toLowerCase().replace(" ", "+") })
         .then(function (response) {
-            //   console.log(JSON.stringify(response.tracks.items.name, null, 2));
-            for (let j = 0; j < response.tracks.items.length; j++) {
-                console.log(`Artist: ${response.tracks.items[j].album.artists[0].name}`);
-                console.log(`Song's name: ${response.tracks.items[j].name}`);
-                console.log(`Album name: ${response.tracks.items[j].album.name}`);
-                console.log(`Preview Link: ${response.tracks.items[j].album.artists[0].external_urls.spotify}`);
-                console.log("__________________________________________________________");
+            if (response.tracks.items.length === 0) {
+                console.log(`No results found for your search of ${local.songName}`);
+            } else {
+                for (let j = 0; j < response.tracks.items.length; j++) {
+                    console.log(`Artist: ${response.tracks.items[j].album.artists[0].name}`);
+                    console.log(`Song's name: ${response.tracks.items[j].name}`);
+                    console.log(`Album name: ${response.tracks.items[j].album.name}`);
+                    console.log(`Preview Link: ${response.tracks.items[j].album.artists[0].external_urls.spotify}`);
+                    console.log("__________________________________________________________");
+                }
             }
             confirm();
+            local.songName = "";
         })
         .catch(function (err) {
             console.log(err);
         });
-        local.songName = "";
 }
 
 function checkOmbd() {
-    console.log(`The movie you picked was ${local.movie}`);
+    // console.log(`The movie you picked was ${local.movie}`);
     axios.get("http://www.omdbapi.com/?t=" + local.movie.toLowerCase().replace(" ", "+") + "&y=&plot=short&apikey=trilogy")
         .then(
             function (response) {
-                // console.log(response.data);
-                console.log(`\nTitle: ${response.data.Title}
-                \nYear: ${response.data.Year}
-                \nIMDB Rating: ${response.data.imdbRating}
-                \nRotten Tomatoes Rating: ${response.data.Ratings[1].Value}
-                \nCountry of production: ${response.data.Country}
-                \nLanguage: ${response.data.Language}
-                \nPlot: ${response.data.Plot}
-                \nActors: ${response.data.Actors}`);
-
+                if (!response.data.Title) {
+                    console.log(`No results found for your search of ${local.movie}`);
+                } else {
+                    console.log(`\nTitle: ${response.data.Title}`);
+                    console.log(`Year: ${response.data.Year}`);
+                    console.log(`IMDB Rating: ${response.data.imdbRating}`);
+                    console.log(`Rotten Tomatoes Rating: ${response.data.Ratings[1].Value}`);
+                    console.log(`Country of production: ${response.data.Country}`);
+                    console.log(`Language: ${response.data.Language}`);
+                    console.log(`Plot: ${response.data.Plot}`);
+                    console.log(`Actors: ${response.data.Actors}`);
+                }
                 confirm();
-            });
-    local.movie = "";
+                local.movie = "";
+            })
+        .catch(function (error) {
+            console.log(error.message);
+        });
 }
 
 function readRandomFile() {
-    console.log(`Reading file in a moment...`);
+    console.log(`Reading file...`);
     fs.readFile("random.txt", "utf8", function (error, data) {
         if (error) {
             console.log(`Error occurred: ${error}`);
@@ -192,13 +206,13 @@ function confirm() {
         });
 }
 
-function logInfo (info) {
-    fs.appendFile("log.txt", info + "\n", function(err) {
+function logInfo(info) {
+    fs.appendFile("log.txt", info + "\n", function (err) {
         if (err) {
-          return console.log(err);
+            return console.log(err);
         }
 
-        console.log("log.txt was updated!");      
-      });
+        console.log(`\nYour search has been logged.\n`);
+    });
 }
 
